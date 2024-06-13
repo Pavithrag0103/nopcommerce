@@ -1,1 +1,0 @@
-EXCEL_FILE_PATH = "C:\\Users\\a250580\\OneDrive - Syneos Health\\Documents\\swag.xlsx"
