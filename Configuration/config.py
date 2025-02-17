@@ -1,1 +1,1 @@
-EXCEL_FILE_PATH = "C:\\Users\\a250580\\OneDrive - Syneos Health\\Documents\\swag.xlsx"
+EXCEL_FILE_PATH = "/Users/pavithra.govindaraj/Library/CloudStorage/OneDrive-SyneosHealth/swag1.xlsx"

@@ -4,7 +4,12 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import (
+    StaleElementReferenceException,
+    NoSuchElementException,
+    TimeoutException
+)
+import time
 
 
 register_xpath="//a[normalize-space()='Register']"
@@ -28,44 +33,53 @@ logo_xpath="/html/body/div[6]/div[1]/div[2]/div[1]/a/img"
 # search
 searchbox_xpath="//input[@id='small-searchterms']"
 searchbutton_xpath="//button[normalize-space()='Search']"
-
+com_xpath="//ul[@class='top-menu notmobile']//a[normalize-space()='Computers']"
+note_xpath="//li[@class='inactive']//a[normalize-space()='Notebooks']"
 #Sort by
 sort_xpath="//select[@id='products-orderby']"
 displaysixe_xpath="//select[@id='products-pagesize']"
 
 # product select
-prd_select_xpath="//a[normalize-space()='HTC One Mini Blue']"
-prd_image1_xpath="//div[@class='picture']//img[@title='Show details for HTC One Mini Blue']"
-prd_image2_xpath="//img[@id='main-product-img-19']"
-prd_name_xpath="//h1[normalize-space()='HTC One Mini Blue']"
+prd_select_xpath="//h2[@class='product-title']//a[normalize-space()='Apple MacBook Pro']"
+prd_image1_xpath="//div[@class='picture-thumbs']//div[1]//img[1]"
+prd_image2_xpath="//div[@class='picture-thumbs']//div[2]//img[1]"
+prd_name_xpath="//h1[normalize-space()='Apple MacBook Pro']"
 prd_desc_xpath="//div[@class='short-description']"
 
 #image
-image_xpath="//img[@id='main-product-img-19']"
+image_xpath="//img[@id='main-product-img-4']"
 
 # Star and Review
 rating_xpath="//div[@class='product-reviews-overview']//div[@class='rating']//div"
-review_line_xpath="//a[normalize-space()='4 review(s)']"
-SKU_xpath="//div[@class='sku']"
+review_line_xpath="//a[normalize-space()='1 review(s)']"
+SKU_xpath="//span[@id='sku-4']"
 
 #address tag
+shipping_xpath="//span[@class='cart-label']"
 address_desc_xpath="//span[normalize-space()='Please select the address you want to ship to']"
-arrow_xpath="//i[@class='arrow-down']"
-popup_xpath="//div[@id='estimate-shipping-popup-19']"
+
 shipto_xpath="//select[@id='CountryId']"
 other_xpath="//select[@id='StateProvinceId']"
 zip_xpath="//input[@id='ZipPostalCode']"
-shippingmethod_xpath="//div[normalize-space()='Name']"
 ground_next_xpath="//div[@class='shipping-options-body']//div[2]//div[1]//label[1]"
 applybtn_xpath="//button[normalize-space()='Apply']"
+
 # Price
-price_xpath="//span[@id='price-value-19']"
-quan_xpath="//*[@id='product_enteredQuantity_19']"
-addcart_btn_xpath="//button[@id='add-to-cart-button-19']"
+price_xpath="//span[@id='price-value-4']"
+quan_xpath="//input[@id='product_enteredQuantity_4']"
+
+# Gift
+gift_drp="//select[@id='checkout_attribute_1']"
+
+#WISH LIST
+add_wish_xpath="//button[@id='add-to-wishlist-button-4']"
+wishlist_xpath="//span[@class='wishlist-label']"
+add_cart_tick="//input[@name='addtocart']"
+addcart_btn_xpath="//button[normalize-space()='Add to cart']"
 
 
 # shpping cart link
-shopcart_xpath="//li[@id='topcartlink']"
+estimated_xpath="//a[@id='open-estimate-shipping-popup']"
 tick_xpath="//input[@id='termsofservice']"
 checkout_xpath="//button[@id='checkout']"
 
@@ -73,6 +87,14 @@ class Ecommerce:
     def __init__(self, driver):
         self.driver = driver
         self.wait = WebDriverWait(self.driver, 10)
+        self.prd_select_xpath = "//h2[@class='product-title']//a[normalize-space()='Apple MacBook Pro']"
+        self.prd_select_xpath = "//h2[@class='product-title']//a[normalize-space()='Apple MacBook Pro']"
+        self.prd_image1_xpath = "//div[@class='picture-thumbs']//div[1]//img[1]"
+        self.prd_image2_xpath = "//div[@class='picture-thumbs']//div[2]//img[1]"
+        self.prd_name_xpath = "//h1[normalize-space()='Apple MacBook Pro']"
+        self.prd_desc_xpath = "//div[@class='short-description']"
+        self.SKU_xpath = "//div[@class='sku']"
+        self.quan_xpath = "//input[@id='product_enteredQuantity_4']"
 
     def register_setup(self, first_name, last_name, email,password,curpassword):
         register_link = self.wait.until(EC.element_to_be_clickable((By.XPATH, register_xpath)))
@@ -116,30 +138,36 @@ class Ecommerce:
         logo_name = parent_element.text
         return logo_name
 
-    def get_search(self,searchvalue):
-        self.wait.until(EC.visibility_of_element_located((By.XPATH,searchbox_xpath))).send_keys(searchvalue)
-        self.wait.until(EC.element_to_be_clickable((By.XPATH,searchbutton_xpath))).click()
+    def get_search(self):
+        # self.wait.until(EC.visibility_of_element_located((By.XPATH,searchbox_xpath))).send_keys(searchvalue)
+        # self.wait.until(EC.element_to_be_clickable((By.XPATH,searchbutton_xpath))).click()
+        self.wait.until(EC.visibility_of_element_located((By.XPATH, com_xpath))).click()
+        self.wait.until(EC.visibility_of_element_located((By.XPATH, note_xpath))).click()
+        time.sleep(2)
         drp_down_sort = self.wait.until(EC.element_to_be_clickable((By.XPATH, sort_xpath)))
         drp_down_sort.click()
         drp_down_sortelement = Select(drp_down_sort)
-        drp_down_sortelement.select_by_index(3)
+        drp_down_sortelement.select_by_index(4)
         drp_down_size=self.wait.until(EC.element_to_be_clickable((By.XPATH,displaysixe_xpath)))
         drp_down_size.click()
         drp_down_sizefield=Select(drp_down_size)
-        drp_down_sizefield.select_by_visible_text("18")
+        drp_down_sizefield.select_by_visible_text("6")
         print("Option selected successfully.")
 
     def get_product(self):
         for attempt in range(3):
             try:
-                prd_select = self.wait.until(EC.element_to_be_clickable((By.XPATH, prd_select_xpath)))
+                prd_select = self.wait.until(EC.element_to_be_clickable((By.XPATH, self.prd_select_xpath)))
                 prd_select.click()
-                product_name = self.wait.until(EC.visibility_of_element_located((By.XPATH, prd_name_xpath))).text
+
+                product_name = self.wait.until(EC.visibility_of_element_located((By.XPATH, self.prd_name_xpath))).text
                 return product_name
-            except StaleElementReferenceException:
+
+            except (StaleElementReferenceException, NoSuchElementException, TimeoutException) as e:
+                print(f"Attempt {attempt + 1} failed: {e}")
                 if attempt == 2:
                     raise
-                time.sleep(1)
+            time.sleep(1)
 
     def get_image_element(self):
         image_field=self.wait.until(EC.visibility_of_element_located((By.XPATH,image_xpath)))
@@ -155,15 +183,21 @@ class Ecommerce:
         rating_field = self.wait.until(EC.presence_of_element_located((By.XPATH, rating_xpath)))
         rating_value = rating_field.text
         return rating_value
+
     def get_review(self):
         review_field=self.wait.until(EC.presence_of_element_located((By.XPATH,review_line_xpath)))
         review_value=review_field.text
         return review_value
 
     def get_SKU(self):
-        SKU_field=self.wait.until(EC.presence_of_element_located((By.XPATH,SKU_xpath)))
-        SKU_value=SKU_field.text
-        return SKU_value
+        try:
+            sku_field = self.wait.until(EC.visibility_of_element_located((By.XPATH,SKU_xpath)))
+            actual_sku_str = sku_field.text.strip()
+            actual_sku_cleaned = actual_sku_str.replace('SKU:', '').strip()
+            return actual_sku_cleaned
+        except Exception as e:
+            print(f"Error fetching SKU: {e}")
+            return None
 
     def get_price(self):
         price_field=self.wait.until(EC.presence_of_element_located((By.XPATH,price_xpath)))
@@ -171,23 +205,63 @@ class Ecommerce:
         return price_value
 
     def get_quantity(self, quantity_count):
-        quantity_field = self.wait.until(EC.presence_of_element_located((By.XPATH, quan_xpath)))
-        quantity_field.click()  # Clicking the element to focus and interact with it
-        quantity_field.clear()
-        quantity_field.send_keys(str(quantity_count))
-        actual_quantity_str = quantity_field.get_attribute("value")
+        quantity_field = self.wait.until(
+            EC.visibility_of_element_located((By.XPATH, quan_xpath)))  # Wait until element is visible
+        quantity_field.click()  # Click to focus and interact with it
+        quantity_field.clear()  # Clear the current value
+        quantity_field.send_keys(str(quantity_count))  # Send new value
+        self.wait.until(EC.text_to_be_present_in_element_value((By.XPATH, quan_xpath),
+                                                               str(quantity_count)))  # Wait for the value to be updated
+        actual_quantity_str = quantity_field.get_attribute("value")  # Get the updated value
         return actual_quantity_str
 
-    def get_address_tag(self):
-        address_field=self.wait.until(EC.visibility_of_element_located((By.XPATH,address_desc_xpath)))
-        address_value=address_field.text
-        return address_value
+    # def get_address_tag(self):
+    #     address_field=self.wait.until(EC.visibility_of_element_located((By.XPATH,address_desc_xpath)))
+    #     address_value=address_field.text
+    #     return address_value
+
+    def get_wishlist(self):
+        try:
+            print("Waiting for wishlist button...")
+            wish = self.wait.until(EC.presence_of_element_located((By.XPATH, add_wish_xpath)))
+            print("Wishlist button found, clicking...")
+            wish.click()
+
+            print("Waiting for wishlist page to load...")
+            wish_list = self.wait.until(EC.presence_of_element_located((By.XPATH, wishlist_xpath)))
+            print("Wishlist page loaded, clicking...")
+            wish_list.click()
+
+            print("Waiting for Add to Cart tick mark...")
+            add_cart = self.wait.until(EC.presence_of_element_located((By.XPATH, add_cart_tick)))
+            print("Add to Cart tick mark found, clicking...")
+            add_cart.click()
+
+            print("Waiting for Add to Cart button to become visible...")
+            add_cart_button = self.wait.until(EC.visibility_of_element_located((By.XPATH, addcart_btn_xpath)))
+
+            # Scroll to element if it's out of view
+            self.driver.execute_script("arguments[0].scrollIntoView();", add_cart_button)
+
+            print("Waiting 2 seconds before clicking...")
+            time.sleep(2)
+
+            print("Clicking Add to Cart button...")
+            add_cart_button.click()
+
+            print("Item added to wishlist successfully!")
+
+        except TimeoutException:
+            print("Error: Timeout occurred while waiting for elements.")
+            raise
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            raise
 
     def get_popup(self):
-        address_field=self.wait.until(EC.element_to_be_clickable((By.XPATH,arrow_xpath)))
-        address_field.click()
-        popup_field=self.wait.until(EC.visibility_of_element_located((By.XPATH,popup_xpath)))
-        return popup_field
+        estimated_field=self.wait.until(EC.element_to_be_clickable((By.XPATH,estimated_xpath)))
+        estimated_field.click()
+
 
     def get_address(self,zip_code):
         shipto=self.wait.until(EC.visibility_of_element_located((By.XPATH, shipto_xpath)))
@@ -205,13 +279,12 @@ class Ecommerce:
         apply_field=self.wait.until(EC.element_to_be_clickable((By.XPATH,applybtn_xpath)))
         apply_field.click()
 
-    def get_button(self):
-        button_field=self.wait.until(EC.visibility_of_element_located((By.XPATH,addcart_btn_xpath)))
-        button_field.click()
+    def get_gift(self):
+            gift_field = self.wait.until(EC.presence_of_element_located((By.XPATH, gift_drp)))
+            gift_value = Select(gift_field)
+            gift_value.select_by_index(1)
 
     def get_shopcart(self):
-        success_field = self.wait.until(EC.element_to_be_clickable((By.XPATH, shopcart_xpath)))
-        success_field.click()
         tick_field=self.wait.until(EC.element_to_be_clickable((By.XPATH, tick_xpath)))
         tick_field.click()
 

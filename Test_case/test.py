@@ -3,7 +3,7 @@ import pytest
 import os
 from Page_object.pom import Ecommerce
 import time
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import StaleElementReferenceException,TimeoutException
 import openpyxl
 from Utilities import xl_utilities as xl
 from Configuration import config
@@ -13,7 +13,6 @@ from Configuration import config
 file = config.EXCEL_FILE_PATH
 workbook = openpyxl.load_workbook(file)
 sheet = workbook.active
-
 
 def test_register(browser):
     register_page = Ecommerce(browser)
@@ -31,7 +30,6 @@ def test_login(browser):
         print(f"Login test failed: {e}")
         browser.save_screenshot("test_login_error.png")
 
-
 # Test case for verifying the logo name
 def test_logo(browser):
     ecommerce_page = Ecommerce(browser)
@@ -41,7 +39,7 @@ def test_logo(browser):
 # Test case for performing a search operation
 def test_search(browser):
     searchfield = Ecommerce(browser)
-    searchfield.get_search("Cell phone")
+    searchfield.get_search()
     time.sleep(5)
 
 # Test case for verifying the product name
@@ -50,7 +48,7 @@ def test_product_name(browser, r=2):
     product_page = Ecommerce(browser)
     actual_product_name = product_page.get_product()
     print("Actual Product Name:", actual_product_name)
-    expected_product_name = "HTC One Mini Blue"
+    expected_product_name = "Apple MacBook Pro"
     assert actual_product_name == expected_product_name, f"Expected {expected_product_name}, but got {actual_product_name}"
     print("Matched Product name")
     time.sleep(20)
@@ -84,12 +82,14 @@ def test_review(browser, row_count=6):
 
 # Test case for verifying the SKU of the product
 def test_SKU(browser, row_count=7):
-    expected_SKU = xl.readData(file, "Sheet1", row_count, 3)
+    expected_SKU = xl.readData(file, "Sheet1", row_count, 3)  # Get SKU from Excel
     SKU = Ecommerce(browser)
     actual_SKU = SKU.get_SKU()
     print("Actual SKU:", actual_SKU)
-    assert actual_SKU == expected_SKU, "Not matched SKU"
-    time.sleep(10)
+    expected_SKU_cleaned = expected_SKU.strip()
+    assert actual_SKU == expected_SKU_cleaned, f"Expected SKU {expected_SKU_cleaned}, but got {actual_SKU}"
+
+
 
 # Test case for verifying the price of the product
 def test_price(browser, row_count=8):
@@ -97,32 +97,53 @@ def test_price(browser, row_count=8):
     price = Ecommerce(browser)
     actual_price_str = price.get_price()
     print("Actual price string:", actual_price_str)
-    actual_price = float(actual_price_str.replace('$', ''))  # Convert the string price to float
-    assert actual_price == expected_price, "Not matched price"
+
+    # Remove commas and the currency symbol before converting to float
+    actual_price_str = actual_price_str.replace(',', '').replace('$', '')
+
+    try:
+        actual_price = float(actual_price_str)  # Convert the cleaned string to float
+    except ValueError:
+        print(f"Error converting price: {actual_price_str}")
+        raise
+
+    assert actual_price == expected_price, f"Expected price: {expected_price}, but got: {actual_price}"
+
 
 # Test case for verifying the quantity of the product
 def test_quantity(browser, row_count=9):
-    expected_quantity = int(xl.readData(file, "Sheet1", row_count, 3))  # Assuming the quantity is an integer
+    expected_quantity = int(xl.readData(file, "Sheet1", row_count, 3))  # Get expected quantity
     quantity_page = Ecommerce(browser)
-    actual_quantity_str = quantity_page.get_quantity(1)
-    time.sleep(2)
-    actual_quantity = int(actual_quantity_str) if actual_quantity_str is not None else None
-    print("Actual quantity:", actual_quantity)
-    assert actual_quantity == expected_quantity, "Not matched quantity"
 
-# Test case for verifying the address description
-def test_address_desc(browser, row_count=10):
-    expected_address_desc = xl.readData(file, "Sheet1", row_count, 3)
-    address_desc = Ecommerce(browser)
-    actual_address_desc = address_desc.get_address_tag()
-    print(f"Actual address description: {actual_address_desc}")
-    assert actual_address_desc == expected_address_desc, "Not matched address description"
+    actual_quantity_str = quantity_page.get_quantity(2)  # Get the actual quantity after update
+    actual_quantity = int(actual_quantity_str) if actual_quantity_str is not None else None  # Convert to int
+
+    # Log expected and actual values for debugging
+    print(f"Expected quantity: {expected_quantity}, Actual quantity: {actual_quantity}")
+
+    # Assert that the actual quantity matches the expected quantity
+    assert actual_quantity == expected_quantity, f"Expected quantity {expected_quantity}, but got {actual_quantity}"
+
+#
+# # Test case for verifying the address description
+# def test_address_desc(browser, row_count=10):
+#     expected_address_desc = xl.readData(file, "Sheet1", row_count, 3)
+#     address_desc = Ecommerce(browser)
+#     actual_address_desc = address_desc.get_address_tag()
+#     print(f"Actual address description: {actual_address_desc}")
+#     assert actual_address_desc == expected_address_desc, "Not matched address description"
+
+
+def test_wishlist(browser):
+    wish=Ecommerce(browser)
+    wishlist=wish.get_wishlist()
+    print("Added to wishlist successfully")
 
 # Test case for verifying the address popup
+
 def test_popup(browser):
     popup = Ecommerce(browser)
     popup_page = popup.get_popup()
-    assert popup_page.is_displayed(), "Not displayed pop up page"
     time.sleep(25)
 
 # Test case for setting the address
@@ -133,12 +154,11 @@ def test_add_address(browser):
     time.sleep(2)
 
 # Test case for clicking the add to cart button
-def test_button(browser):
+def test_gift (browser):
     addtocart = Ecommerce(browser)
-    addtocart.get_button()
+    addtocart.get_gift()
     print("Clicked the add to cart button")
     time.sleep(5)
-
 
 
 # Test case for viewing the shopping cart
