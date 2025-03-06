@@ -41,6 +41,10 @@ displaysixe_xpath="//select[@id='products-pagesize']"
 
 # product select
 prd_select_xpath="//h2[@class='product-title']//a[normalize-space()='Apple MacBook Pro']"
+combutton1_xpath="//body[1]/div[6]/div[3]/div[1]/div[3]/div[1]/div[2]/div[2]/div[2]/div[1]/div[1]/div[1]/div[1]/div[2]/div[3]/div[2]/button[2]"
+combutton2_xpath="/html/body/div[6]/div[3]/div/div[3]/div/div[2]/div[2]/div[2]/div/div/div[2]/div/div[2]/div[3]/div[2]/button[2]"
+comparelist_xpath="//a[normalize-space()='Compare products list']"
+
 prd_image1_xpath="//div[@class='picture-thumbs']//div[1]//img[1]"
 prd_image2_xpath="//div[@class='picture-thumbs']//div[2]//img[1]"
 prd_name_xpath="//h1[normalize-space()='Apple MacBook Pro']"
@@ -82,6 +86,21 @@ addcart_btn_xpath="//button[normalize-space()='Add to cart']"
 estimated_xpath="//a[@id='open-estimate-shipping-popup']"
 tick_xpath="//input[@id='termsofservice']"
 checkout_xpath="//button[@id='checkout']"
+
+# compare
+prd1_xpath="//tr[@class='product-name']//a[normalize-space()='Apple MacBook Pro']"
+prd2_xpath="//a[normalize-space()='Samsung Premium Ultrabook']"
+price1_xpath="//td[normalize-space()='$1,800.00']"
+price2_xpath="//td[normalize-space()='$1,590.00']"
+screen1_xpath="//tbody/tr[3]/td[1]"
+screen2_xpath="//tbody/tr[2]/td[1]"
+cpu1_xpath="//td[normalize-space()='Intel Core i5']"
+cpu2_xpath="//*[@id='main']/div/div[2]/div/div[2]/div/table/tbody/tr[7]/td[2]"
+memory1_xpath="//td[normalize-space()='4 GB']"
+memory2_xpath="//td[normalize-space()='8 GB']"
+harddrive1_xpath="//tbody/tr[5]/td[3]"
+harddrive2_xpath="//td[normalize-space()='128 GB']"
+
 
 class Ecommerce:
     def __init__(self, driver):
@@ -154,20 +173,94 @@ class Ecommerce:
         drp_down_sizefield.select_by_visible_text("6")
         print("Option selected successfully.")
 
-    def get_product(self):
-        for attempt in range(3):
-            try:
-                prd_select = self.wait.until(EC.element_to_be_clickable((By.XPATH, self.prd_select_xpath)))
-                prd_select.click()
+    def get_compare_list(self):
+        """Extracts product comparison details and asserts differences."""
+        self.wait.until(EC.visibility_of_element_located((By.XPATH, combutton1_xpath))).click()
+        time.sleep(2)
+        self.wait.until(EC.visibility_of_element_located((By.XPATH, combutton2_xpath))).click()
+        time.sleep(2)
+        self.wait.until(EC.visibility_of_element_located((By.XPATH, comparelist_xpath))).click()
 
+        # Extract product names
+        product1_name = self.wait.until(EC.visibility_of_element_located((By.XPATH, prd1_xpath))).text
+        product2_name = self.wait.until(EC.visibility_of_element_located((By.XPATH, prd2_xpath))).text
+
+        # Extract price values
+        price1 = float(
+            self.wait.until(EC.visibility_of_element_located((By.XPATH, price1_xpath))).text.replace("$", "").replace(
+                ",", ""))
+        price2 = float(
+            self.wait.until(EC.visibility_of_element_located((By.XPATH, price2_xpath))).text.replace("$", "").replace(
+                ",", ""))
+
+        # Extract screen sizes
+        screen_size1 = self.wait.until(EC.visibility_of_element_located((By.XPATH, screen1_xpath))).text
+        screen_size2 = self.wait.until(EC.visibility_of_element_located((By.XPATH, screen2_xpath))).text
+
+        # Extract CPU types
+        cpu1 = self.wait.until(EC.visibility_of_element_located((By.XPATH, cpu1_xpath))).text
+        cpu2 = self.wait.until(EC.visibility_of_element_located((By.XPATH, cpu2_xpath))).text
+
+        # Extract memory values
+        memory1 = int(self.wait.until(EC.visibility_of_element_located((By.XPATH, memory1_xpath))).text.split()[0])
+        memory2 = int(self.wait.until(EC.visibility_of_element_located((By.XPATH, memory2_xpath))).text.split()[0])
+
+        # Extract hard drive details
+        hard_drive1 = self.wait.until(EC.visibility_of_element_located((By.XPATH, harddrive1_xpath))).text
+        hard_drive2 = self.wait.until(EC.visibility_of_element_located((By.XPATH, harddrive2_xpath))).text
+
+        # Log extracted details
+        print(f"Comparing {product1_name} vs {product2_name}")
+        print(f"Price: {price1} vs {price2}")
+        print(f"Screen Size: {screen_size1} vs {screen_size2}")
+        print(f"CPU: {cpu1} vs {cpu2}")
+        print(f"Memory: {memory1}GB vs {memory2}GB")
+        print(f"Hard Drive: {hard_drive1} vs {hard_drive2}")
+
+        # Assertions for comparison
+        try:
+            assert price1 > price2, f"{product1_name} is more expensive than {product2_name}"
+            assert memory2 > memory1, f"{product2_name} has more RAM than {product1_name}"
+            assert cpu2 > cpu1, f"{product2_name} has a better processor than {product1_name}"
+            print("Product comparison test passed successfully!")
+        except AssertionError as e:
+            print(f"Assertion Failed: {e}")
+
+        # Return extracted data for further use
+        comparison_data = {
+            "Product 1": product1_name,
+            "Product 2": product2_name,
+            "Price": (price1, price2),
+            "Screen Size": (screen_size1, screen_size2),
+            "CPU": (cpu1, cpu2),
+            "Memory": (memory1, memory2),
+            "Hard Drive": (hard_drive1, hard_drive2)
+        }
+
+        # After completing the comparison, go back to the previous page
+        self.driver.back()
+        time.sleep(1)  # Give time for the page to load after navigating back
+
+        return comparison_data# Go back to the previous page
+
+    def get_product(self):
+        for attempt in range(3):  # Retry up to 3 times
+            try:
+                self.wait.until(EC.presence_of_element_located(
+                    (By.XPATH, self.prd_select_xpath)))  # Ensure element is present in DOM
+                prd_select = self.wait.until(
+                    EC.element_to_be_clickable((By.XPATH, self.prd_select_xpath)))  # Wait for it to be clickable
+                prd_select.click()  # Click the product
+
+                # Wait for the product name to be visible and return it
                 product_name = self.wait.until(EC.visibility_of_element_located((By.XPATH, self.prd_name_xpath))).text
                 return product_name
-
             except (StaleElementReferenceException, NoSuchElementException, TimeoutException) as e:
                 print(f"Attempt {attempt + 1} failed: {e}")
-                if attempt == 2:
+                if attempt == 2:  # Fail the test if retry limit is reached
                     raise
-            time.sleep(1)
+            time.sleep(1)  # Wait for 1 second before retrying
+
 
     def get_image_element(self):
         image_field=self.wait.until(EC.visibility_of_element_located((By.XPATH,image_xpath)))
@@ -215,10 +308,6 @@ class Ecommerce:
         actual_quantity_str = quantity_field.get_attribute("value")  # Get the updated value
         return actual_quantity_str
 
-    # def get_address_tag(self):
-    #     address_field=self.wait.until(EC.visibility_of_element_located((By.XPATH,address_desc_xpath)))
-    #     address_value=address_field.text
-    #     return address_value
 
     def get_wishlist(self):
         try:
